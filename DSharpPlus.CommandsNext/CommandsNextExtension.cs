@@ -158,7 +158,7 @@ namespace DSharpPlus.CommandsNext
 
             if (this.Config.EnableDefaultHelp)
             {
-                this.RegisterCommands(typeof(DefaultHelpModule), null, out var tcmds);
+                this.RegisterCommands(typeof(DefaultHelpModule), null, null, out var tcmds);
 
                 if (this.Config.DefaultHelpChecks != null)
                 {
@@ -402,25 +402,27 @@ namespace DSharpPlus.CommandsNext
             if (!t.IsModuleCandidateType())
                 throw new ArgumentNullException(nameof(t), "Type must be a class, which cannot be abstract or static.");
 
-            this.RegisterCommands(t, null, out var tempCommands);
+            this.RegisterCommands(t, null, null, out var tempCommands);
 
             if (tempCommands != null)
                 foreach (var command in tempCommands)
                     this.AddToCommandDictionary(command.Build(null));
         }
 
-        private void RegisterCommands(Type t, CommandGroupBuilder currentParent, out List<CommandBuilder> foundCommands)
+        private void RegisterCommands(Type t, CommandGroupBuilder currentParent, IEnumerable<CheckBaseAttribute> inheritedChecks, out List<CommandBuilder> foundCommands)
         {
             var ti = t.GetTypeInfo();
 
             var lifespan = ti.GetCustomAttribute<ModuleLifespanAttribute>();
+            var moduleLifespan = lifespan != null ? lifespan.Lifespan : ModuleLifespan.Singleton;
+
             var module = new CommandModuleBuilder()
                 .WithType(t)
-                .WithLifespan(lifespan != null ? lifespan.Lifespan : ModuleLifespan.Singleton)
+                .WithLifespan(moduleLifespan)
                 .Build(this.Services);
 
             // restrict parent lifespan to more or equally restrictive
-            if (currentParent?.Module is TransientCommandModule && lifespan.Lifespan != ModuleLifespan.Transient)
+            if (currentParent?.Module is TransientCommandModule && moduleLifespan != ModuleLifespan.Transient)
                 throw new InvalidOperationException("In a transient module, child modules can only be transient.");
 
             // check if we are anything
@@ -429,6 +431,7 @@ namespace DSharpPlus.CommandsNext
             var moduleAttributes = ti.GetCustomAttributes();
             var moduleHidden = false;
             var moduleChecks = new List<CheckBaseAttribute>();
+
             foreach (var xa in moduleAttributes)
             {
                 switch (xa)
@@ -452,6 +455,10 @@ namespace DSharpPlus.CommandsNext
                             moduleName = moduleName.ToLowerInvariant();
 
                         groupBuilder.WithName(moduleName);
+
+                        if (inheritedChecks != null)
+                            foreach (var chk in inheritedChecks)
+                                groupBuilder.WithExecutionCheck(chk);
                         
                         foreach (var mi in ti.DeclaredMethods.Where(x => x.IsCommandCandidate(out _) && x.GetCustomAttribute<GroupCommandAttribute>() != null))
                             groupBuilder.WithOverload(new CommandOverloadBuilder(mi));
@@ -483,7 +490,11 @@ namespace DSharpPlus.CommandsNext
             }
 
             if (!isModule)
+            {
                 groupBuilder = null;
+                if (inheritedChecks != null)
+                    moduleChecks.AddRange(inheritedChecks);
+            }
 
             // candidate methods
             var methods = ti.DeclaredMethods;
@@ -564,7 +575,14 @@ namespace DSharpPlus.CommandsNext
                 .Where(xt => xt.IsModuleCandidateType() && xt.DeclaredConstructors.Any(xc => xc.IsPublic));
             foreach (var type in types)
             {
-                this.RegisterCommands(type.AsType(), groupBuilder, out var tempCommands);
+                this.RegisterCommands(type.AsType(), 
+                    groupBuilder, 
+                    !isModule ? moduleChecks : null,
+                    out var tempCommands);
+
+                if (isModule)
+                    foreach (var chk in moduleChecks)
+                        groupBuilder.WithExecutionCheck(chk);
 
                 if (isModule && tempCommands != null)
                         foreach (var xtcmd in tempCommands)
