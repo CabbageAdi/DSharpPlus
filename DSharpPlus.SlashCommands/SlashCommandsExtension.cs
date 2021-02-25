@@ -22,10 +22,7 @@ namespace DSharpPlus.SlashCommands
     /// </summary>
     public class SlashCommandsExtension : BaseExtension
     {
-        /// <summary>
-        /// The config provided while initializing this extension
-        /// </summary>
-        public readonly SlashCommandsConfiguration Config;
+        private bool Registered = false;
 
         internal List<CommandMethod> CommandMethods { get; set; } = new List<CommandMethod>();
         internal List<GroupCommand> GroupCommands { get; set; } = new List<GroupCommand>();
@@ -36,10 +33,7 @@ namespace DSharpPlus.SlashCommands
         /// </summary>
         public IReadOnlyList<DiscordApplicationCommand> RegisteredCommands { get; internal set; } = new List<DiscordApplicationCommand>();
 
-        internal SlashCommandsExtension(SlashCommandsConfiguration config)
-        {
-            Config = config;
-        }
+        internal SlashCommandsExtension() { }
 
         protected internal override void Setup(DiscordClient client)
         {
@@ -60,12 +54,17 @@ namespace DSharpPlus.SlashCommands
         /// Registers a command class
         /// </summary>
         /// <typeparam name="T">The command class to register</typeparam>
-        public void RegisterCommands<T>() where T : SlashCommandModule
+        public void RegisterCommands<T>(ulong? guildid = null) where T : SlashCommandModule
         {
-            RegisterCommands(typeof(T));
+            if (Registered)
+            {
+                throw new Exception("Cannot register more than one class!");
+            }
+            RegisterCommands(typeof(T), guildid);
+            Registered = true;
         }
 
-        private void RegisterCommands(Type t)
+        private void RegisterCommands(Type t, ulong? guildid)
         {
             Client.Ready += (s, e) =>
             {
@@ -314,7 +313,7 @@ namespace DSharpPlus.SlashCommands
                             ToUpdate.Add(payload);
                         }
 
-                        RegisteredCommands = await BulkCreateCommandsAsync(ToUpdate);
+                        RegisteredCommands = await BulkCreateCommandsAsync(ToUpdate, guildid);
                     }
                     catch (Exception ex)
                     {
@@ -350,7 +349,7 @@ namespace DSharpPlus.SlashCommands
                     var groups = GroupCommands.Where(x => x.Name == e.Interaction.Data.Name);
                     var subgroups = SubGroupCommands.Where(x => x.Name == e.Interaction.Data.Name);
                     if (!methods.Any() && !groups.Any() && !subgroups.Any())
-                        throw new CommandNotFoundException("An interaction was created, but no command was registered for it (might be a library bug!)");
+                        throw new CommandNotFoundException("An interaction was created, but no command was registered for it");
                     if((methods.Any() && groups.Any()) || (methods.Any() && subgroups.Any()) || (groups.Any() && subgroups.Any()))
                         throw new Exception("There were multiple commands registered with the same name");
                     if (methods.Any())
@@ -478,13 +477,13 @@ namespace DSharpPlus.SlashCommands
 
 
         //REST methods
-        internal async Task<DiscordApplicationCommand> CreateCommandAsync(CommandCreatePayload pld)
+        internal async Task<DiscordApplicationCommand> CreateCommandAsync(CommandCreatePayload pld, ulong? guildid)
         {
             string route;
-            if(Config.GuildId == null)
+            if(guildid == null)
                 route = $"/applications/{Client.CurrentApplication.Id}/commands";
             else
-                route = $"/applications/{Client.CurrentApplication.Id}/guilds/{Config.GuildId}/commands";              
+                route = $"/applications/{Client.CurrentApplication.Id}/guilds/{guildid}/commands";              
 
             var bucket = Client.ApiClient.Rest.GetBucket(RestRequestMethod.POST, route, new { }, out var path);
 
@@ -497,13 +496,13 @@ namespace DSharpPlus.SlashCommands
             return ret;
         }
 
-        internal async Task<IReadOnlyList<DiscordApplicationCommand>> BulkCreateCommandsAsync(List<CommandCreatePayload> pld)
+        internal async Task<IReadOnlyList<DiscordApplicationCommand>> BulkCreateCommandsAsync(List<CommandCreatePayload> pld, ulong? guildid = null)
         {
             string route;
-            if (Config.GuildId == null)
+            if (guildid == null)
                 route = $"/applications/{Client.CurrentApplication.Id}/commands";
             else
-                route = $"/applications/{Client.CurrentApplication.Id}/guilds/{Config.GuildId}/commands";
+                route = $"/applications/{Client.CurrentApplication.Id}/guilds/{guildid}/commands";
 
             var bucket = Client.ApiClient.Rest.GetBucket(RestRequestMethod.PUT, route, new { }, out var path);
 
@@ -520,14 +519,15 @@ namespace DSharpPlus.SlashCommands
         /// <summary>
         /// Gets a list of all slash commands associated with this extension
         /// </summary>
+        /// <param name="guildid">The guild to get commands for, leave as null to get global commands</param>
         /// <returns>A list of DiscordApplicationCommand</returns>
-        public async Task<IReadOnlyList<DiscordApplicationCommand>> GetAllCommandsAsync()
+        public async Task<IReadOnlyList<DiscordApplicationCommand>> GetAllCommandsAsync(ulong? guildid = null)
         {
             string route;
-            if (Config.GuildId == null)
+            if (guildid == null)
                route = $"/applications/{Client.CurrentApplication.Id}/commands";
             else
-               route = $"/applications/{Client.CurrentApplication.Id}/guilds/{Config.GuildId}/commands";
+               route = $"/applications/{Client.CurrentApplication.Id}/guilds/{guildid}/commands";
 
             var bucket = Client.ApiClient.Rest.GetBucket(RestRequestMethod.GET, route, new { }, out var path);
 
@@ -541,14 +541,15 @@ namespace DSharpPlus.SlashCommands
         /// Gets a slash command
         /// </summary>
         /// <param name="commandId">The id of the command to get</param>
+        /// <param name="guildid">The guild the command is in, leave as null if it's a global command</param>
         /// <returns>The command requested</returns>
-        public async Task<DiscordApplicationCommand> GetCommandAsync(ulong commandId)
+        public async Task<DiscordApplicationCommand> GetCommandAsync(ulong commandId, ulong? guildid = null)
         {
             string route;
-            if (Config.GuildId == null)
+            if (guildid == null)
                 route = $"/applications/{Client.CurrentApplication.Id}/commands/{commandId}";
             else
-                route = $"/applications/{Client.CurrentApplication.Id}/guilds/{Config.GuildId}/commands/{commandId}";
+                route = $"/applications/{Client.CurrentApplication.Id}/guilds/{guildid}/commands/{commandId}";
 
             var bucket = Client.ApiClient.Rest.GetBucket(RestRequestMethod.GET, route, new { }, out var path);
 
@@ -562,14 +563,15 @@ namespace DSharpPlus.SlashCommands
         /// Deleted a slash command
         /// </summary>
         /// <param name="commandId">The id of the command to delete</param>
+        /// <param name="guildid">The guild the command is in, leave as null if it's a global command</param>
         /// <returns></returns>
-        public async Task DeleteCommandAsync(ulong commandId)
+        public async Task DeleteCommandAsync(ulong commandId, ulong? guildid = null)
         {
             string route;
-            if (Config.GuildId == null)
+            if (guildid == null)
                 route = $"/applications/{Client.CurrentApplication.Id}/commands/{commandId}";
             else
-                route = $"/applications/{Client.CurrentApplication.Id}/guilds/{Config.GuildId}/commands/{commandId}";
+                route = $"/applications/{Client.CurrentApplication.Id}/guilds/{guildid}/commands/{commandId}";
 
             var bucket = Client.ApiClient.Rest.GetBucket(RestRequestMethod.DELETE, route, new { }, out var path);
 

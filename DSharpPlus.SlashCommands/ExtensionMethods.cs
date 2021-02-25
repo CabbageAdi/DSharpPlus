@@ -15,12 +15,12 @@ namespace DSharpPlus.SlashCommands
         /// <param name="client">Client to enable slash commands for</param>
         /// <param name="config">Configuration to use</param>
         /// <returns>Created <see cref="SlashCommandsExtension"/></returns>
-        public static SlashCommandsExtension UseSlashCommands(this DiscordClient client, SlashCommandsConfiguration config)
+        public static SlashCommandsExtension UseSlashCommands(this DiscordClient client)
         {
             if (client.GetExtension<SlashCommandsExtension>() != null)
                 throw new InvalidOperationException("Slash commands are already enabled for that client.");
 
-            var scomm = new SlashCommandsExtension(config);
+            var scomm = new SlashCommandsExtension();
             client.AddExtension(scomm);
             return scomm;
         }
