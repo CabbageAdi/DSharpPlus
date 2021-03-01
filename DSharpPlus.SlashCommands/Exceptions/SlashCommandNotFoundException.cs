@@ -7,8 +7,8 @@ namespace DSharpPlus.SlashCommands.Exceptions
     /// <summary>
     /// Thrown when a command cannot be found for an interaction
     /// </summary>
-    public class CommandNotFoundException : Exception
+    public class SlashCommandNotFoundException : Exception
     {
-        internal CommandNotFoundException(string message) : base (message) { }
+        internal SlashCommandNotFoundException(string message) : base (message) { }
     }
 }

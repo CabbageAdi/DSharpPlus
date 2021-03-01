@@ -13,6 +13,11 @@ namespace DSharpPlus.SlashCommands
     public sealed class InteractionContext
     {
         /// <summary>
+        /// Gets the interaction that was created
+        /// </summary>
+        public DiscordInteraction Interaction { get; internal set; }
+
+        /// <summary>
         /// Gets the client for this interaction
         /// </summary>
         public DiscordClient Client { get; internal set; }

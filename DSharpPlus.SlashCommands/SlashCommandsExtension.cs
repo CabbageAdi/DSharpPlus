@@ -22,19 +22,13 @@ namespace DSharpPlus.SlashCommands
     /// </summary>
     public class SlashCommandsExtension : BaseExtension
     {
-        private bool Registered = false;
-
         internal List<CommandMethod> CommandMethods { get; set; } = new List<CommandMethod>();
         internal List<GroupCommand> GroupCommands { get; set; } = new List<GroupCommand>();
         internal List<SubGroupCommand> SubGroupCommands { get; set; } = new List<SubGroupCommand>();
 
-        /// <summary>
-        /// A list of commands registered
-        /// </summary>
-        public IReadOnlyList<DiscordApplicationCommand> RegisteredCommands { get; internal set; } = new List<DiscordApplicationCommand>();
-
         internal SlashCommandsExtension() { }
 
+        /// <summary></summary>
         protected internal override void Setup(DiscordClient client)
         {
             if (this.Client != null)
@@ -56,16 +50,15 @@ namespace DSharpPlus.SlashCommands
         /// <typeparam name="T">The command class to register</typeparam>
         public void RegisterCommands<T>(ulong? guildid = null) where T : SlashCommandModule
         {
-            if (Registered)
-            {
-                throw new Exception("Cannot register more than one class!");
-            }
             RegisterCommands(typeof(T), guildid);
-            Registered = true;
         }
 
         private void RegisterCommands(Type t, ulong? guildid)
         {
+            CommandMethod[] InternalCommandMethods = Array.Empty<CommandMethod>();
+            GroupCommand[] InternalGroupCommands = Array.Empty<GroupCommand>();
+            SubGroupCommand[] InternalSubGroupCommands = Array.Empty<SubGroupCommand>();
+
             Client.Ready += (s, e) =>
             {
                 _ = Task.Run(async () =>
@@ -77,14 +70,14 @@ namespace DSharpPlus.SlashCommands
                         var ti = t.GetTypeInfo();
 
                         var classes = ti.DeclaredNestedTypes;
-                        foreach(var tti in classes.Where(x => x.GetCustomAttribute<SlashCommandGroupAttribute>() != null))
+                        foreach (var tti in classes.Where(x => x.GetCustomAttribute<SlashCommandGroupAttribute>() != null))
                         {
                             var groupatt = tti.GetCustomAttribute<SlashCommandGroupAttribute>();
                             var submethods = tti.DeclaredMethods;
                             var subclasses = tti.DeclaredNestedTypes;
                             if (subclasses.Any(x => x.GetCustomAttribute<SlashCommandGroupAttribute>() != null) && submethods.Any(x => x.GetCustomAttribute<SlashCommandAttribute>() != null))
                             {
-                                throw new Exception("Slash command groups cannot have both subcommands and subgroups!");
+                                throw new ArgumentException("Slash command groups cannot have both subcommands and subgroups!");
                             }
                             var payload = new CommandCreatePayload
                             {
@@ -164,9 +157,9 @@ namespace DSharpPlus.SlashCommands
                                     Type = ApplicationCommandOptionType.SubCommand
                                 });
 
-                                GroupCommands.Add(new GroupCommand { Name = groupatt.Name, ParentClass = tti, Methods = commandmethods });
+                                InternalGroupCommands = InternalGroupCommands.Append(new GroupCommand { Name = groupatt.Name, ParentClass = tti, Methods = commandmethods }).ToArray();
                             }
-                            foreach(var subclass in subclasses.Where(x => x.GetCustomAttribute<SlashCommandGroupAttribute>() != null))
+                            foreach (var subclass in subclasses.Where(x => x.GetCustomAttribute<SlashCommandGroupAttribute>() != null))
                             {
                                 var subgroupatt = subclass.GetCustomAttribute<SlashCommandGroupAttribute>();
                                 var subsubmethods = subclass.DeclaredMethods.Where(x => x.GetCustomAttribute<SlashCommandAttribute>() != null);
@@ -185,8 +178,8 @@ namespace DSharpPlus.SlashCommands
                                 foreach (var subsubmethod in subsubmethods)
                                 {
                                     var commatt = subsubmethod.GetCustomAttribute<SlashCommandAttribute>();
-                                    var subsubpayload = new DiscordApplicationCommandOption() 
-                                    { 
+                                    var subsubpayload = new DiscordApplicationCommandOption()
+                                    {
                                         Type = ApplicationCommandOptionType.SubCommand,
                                         Name = commatt.Name,
                                         Description = commatt.Description
@@ -246,7 +239,7 @@ namespace DSharpPlus.SlashCommands
                                     commandmethods.Add(commatt.Name, subsubmethod);
                                 }
                                 command.SubCommands.Add(new GroupCommand { Name = subgroupatt.Name, ParentClass = subclass, Methods = commandmethods });
-                                SubGroupCommands.Add(command);
+                                InternalSubGroupCommands = InternalSubGroupCommands.Append(command).ToArray();
                                 payload.Options.Add(subpayload);
                             }
                             ToUpdate.Add(payload);
@@ -309,11 +302,25 @@ namespace DSharpPlus.SlashCommands
                                     Choices = choices
                                 });
                             }
-                            CommandMethods.Add(new CommandMethod { Method = method, Name = commandattribute.Name, ParentClass = t });
+                            InternalCommandMethods = InternalCommandMethods.Append(new CommandMethod { Method = method, Name = commandattribute.Name, ParentClass = t }).ToArray();
                             ToUpdate.Add(payload);
                         }
 
-                        RegisteredCommands = await BulkCreateCommandsAsync(ToUpdate, guildid);
+                        var commands = await BulkCreateCommandsAsync(ToUpdate, guildid);
+                        foreach(var command in commands)
+                        {
+                            if (InternalCommandMethods.Any(x => x.Name == command.Name))
+                                InternalCommandMethods.First(x => x.Name == command.Name).Id = command.Id;
+
+                            else if (InternalGroupCommands.Any(x => x.Name == command.Name))
+                                InternalGroupCommands.First(x => x.Name == command.Name).Id = command.Id;
+
+                            else if (InternalSubGroupCommands.Any(x => x.Name == command.Name))
+                                InternalSubGroupCommands.First(x => x.Name == command.Name).Id = command.Id;
+                        }
+                        CommandMethods.AddRange(InternalCommandMethods);
+                        GroupCommands.AddRange(InternalGroupCommands);
+                        SubGroupCommands.AddRange(InternalSubGroupCommands);
                     }
                     catch (Exception ex)
                     {
@@ -333,6 +340,7 @@ namespace DSharpPlus.SlashCommands
             {
                 InteractionContext context = new InteractionContext
                 {
+                    Interaction = e.Interaction,
                     Channel = e.Interaction.Channel,
                     Guild = e.Interaction.Guild,
                     Member = e.Interaction.Member,
@@ -345,13 +353,11 @@ namespace DSharpPlus.SlashCommands
 
                 try
                 {
-                    var methods = CommandMethods.Where(x => x.Name == e.Interaction.Data.Name);
-                    var groups = GroupCommands.Where(x => x.Name == e.Interaction.Data.Name);
-                    var subgroups = SubGroupCommands.Where(x => x.Name == e.Interaction.Data.Name);
+                    var methods = CommandMethods.Where(x => x.Id == e.Interaction.Data.Id);
+                    var groups = GroupCommands.Where(x => x.Id == e.Interaction.Data.Id);
+                    var subgroups = SubGroupCommands.Where(x => x.Id == e.Interaction.Data.Id);
                     if (!methods.Any() && !groups.Any() && !subgroups.Any())
-                        throw new CommandNotFoundException("An interaction was created, but no command was registered for it");
-                    if((methods.Any() && groups.Any()) || (methods.Any() && subgroups.Any()) || (groups.Any() && subgroups.Any()))
-                        throw new Exception("There were multiple commands registered with the same name");
+                        throw new SlashCommandNotFoundException("An interaction was created, but no command was registered for it");
                     if (methods.Any())
                     {
                         var method = methods.First();
@@ -474,7 +480,6 @@ namespace DSharpPlus.SlashCommands
             });
             return Task.CompletedTask;
         }
-
 
         //REST methods
         internal async Task<DiscordApplicationCommand> CreateCommandAsync(CommandCreatePayload pld, ulong? guildid)
@@ -645,7 +650,7 @@ namespace DSharpPlus.SlashCommands
         /// </summary>
         /// <param name="token">The token of the interaction</param>
         /// <param name="webhook">The data to send</param>
-        /// <returns>The returned DiscordMessage</returns>
+        /// <returns>The returned <see cref="DiscordMessage"/></returns>
         public Task<DiscordMessage> CreateFollowupMessageAsync(string token, DiscordWebhookBuilder webhook)
             => ExecuteAsync(Client.CurrentApplication.Id, token, webhook);
 
@@ -701,6 +706,8 @@ namespace DSharpPlus.SlashCommands
 
     internal class CommandMethod
     {
+        public ulong Id;
+
         public string Name;
         public MethodInfo Method;
         public Type ParentClass;
@@ -708,6 +715,8 @@ namespace DSharpPlus.SlashCommands
 
     internal class GroupCommand
     {
+        public ulong Id;
+
         public string Name;
         public Dictionary<string, MethodInfo> Methods = null;
         public Type ParentClass;
@@ -715,6 +724,8 @@ namespace DSharpPlus.SlashCommands
 
     internal class SubGroupCommand
     {
+        public ulong Id;
+
         public string Name;
         public List<GroupCommand> SubCommands = new List<GroupCommand>();
     }
