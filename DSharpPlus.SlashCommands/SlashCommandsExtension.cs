@@ -652,13 +652,7 @@ namespace DSharpPlus.SlashCommands
         /// <param name="webhook">The data to send</param>
         /// <returns>The returned <see cref="DiscordMessage"/></returns>
         public Task<DiscordMessage> CreateFollowupMessageAsync(string token, DiscordWebhookBuilder webhook)
-            => ExecuteAsync(Client.CurrentApplication.Id, token, webhook);
-
-        internal Task<DiscordMessage> ExecuteAsync(ulong id, string token, DiscordWebhookBuilder builder)
-            => Client.ApiClient.ExecuteWebhookAsync(id, token, builder.Content,
-                builder.Username.HasValue ? builder.Username.Value : Client.CurrentUser.Username,
-                builder.AvatarUrl.HasValue ? builder.AvatarUrl.Value : Client.CurrentUser.AvatarUrl,
-                builder.IsTTS, builder.Embeds, builder.Files, builder.Mentions);
+            => Client.ApiClient.ExecuteWebhookAsync(Client.CurrentApplication.Id, token, webhook);
 
         //Events
 
