@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <Import Project="../DSharpPlus.targets" />
+  <Import Project="../DSharpPlus.targets"/>
 
   <PropertyGroup>
     <AssemblyName>DSharpPlus.Interactivity</AssemblyName>
@@ -17,11 +17,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ConcurrentHashSet" Version="1.1.0" />
+    <PackageReference Include="ConcurrentHashSet" Version="1.1.0"/>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DSharpPlus\DSharpPlus.csproj" />
+    <ProjectReference Include="..\DSharpPlus\DSharpPlus.csproj"/>
   </ItemGroup>
 
 </Project>

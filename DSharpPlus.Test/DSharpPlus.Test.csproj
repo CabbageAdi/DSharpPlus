@@ -31,7 +31,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="ADumbFile.txt" />
+    <None Remove="ADumbFile.txt"/>
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
@@ -41,18 +41,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="3.9.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="5.0.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="3.9.0"/>
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="5.0.0"/>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DSharpPlus.Lavalink\DSharpPlus.Lavalink.csproj" />
-    <ProjectReference Include="..\DSharpPlus.Rest\DSharpPlus.Rest.csproj" />
-    <ProjectReference Include="..\DSharpPlus.SlashCommands\DSharpPlus.SlashCommands.csproj" />
-    <ProjectReference Include="..\DSharpPlus\DSharpPlus.csproj" />
-    <ProjectReference Include="..\DSharpPlus.CommandsNext\DSharpPlus.CommandsNext.csproj" />
-    <ProjectReference Include="..\DSharpPlus.Interactivity\DSharpPlus.Interactivity.csproj" />
-    <ProjectReference Include="..\DSharpPlus.VoiceNext\DSharpPlus.VoiceNext.csproj" />
+    <ProjectReference Include="..\DSharpPlus.Lavalink\DSharpPlus.Lavalink.csproj"/>
+    <ProjectReference Include="..\DSharpPlus.Rest\DSharpPlus.Rest.csproj"/>
+    <ProjectReference Include="..\DSharpPlus.SlashCommands\DSharpPlus.SlashCommands.csproj"/>
+    <ProjectReference Include="..\DSharpPlus\DSharpPlus.csproj"/>
+    <ProjectReference Include="..\DSharpPlus.CommandsNext\DSharpPlus.CommandsNext.csproj"/>
+    <ProjectReference Include="..\DSharpPlus.Interactivity\DSharpPlus.Interactivity.csproj"/>
+    <ProjectReference Include="..\DSharpPlus.VoiceNext\DSharpPlus.VoiceNext.csproj"/>
   </ItemGroup>
 
   <ItemGroup>

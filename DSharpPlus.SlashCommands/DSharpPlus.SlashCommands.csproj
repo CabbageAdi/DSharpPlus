@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <Import Project="../DSharpPlus.targets" />
+  <Import Project="../DSharpPlus.targets"/>
 
   <PropertyGroup>
     <AssemblyName>DSharpPlus.SlashCommands</AssemblyName>
@@ -18,11 +18,11 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.1"/>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DSharpPlus\DSharpPlus.csproj" />
+    <ProjectReference Include="..\DSharpPlus\DSharpPlus.csproj"/>
   </ItemGroup>
 
 </Project>

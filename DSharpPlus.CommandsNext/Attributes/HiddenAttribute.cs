@@ -30,5 +30,6 @@ namespace DSharpPlus.CommandsNext.Attributes
     /// </summary>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = false)]
     public sealed class HiddenAttribute : Attribute
-    { }
+    {
+    }
 }

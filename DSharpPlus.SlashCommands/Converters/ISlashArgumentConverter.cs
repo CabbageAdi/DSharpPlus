@@ -21,29 +21,33 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System;
+using System.Threading.Tasks;
+using DSharpPlus.Entities;
 
-namespace DSharpPlus.CommandsNext.Attributes
+namespace DSharpPlus.SlashCommands.Converters
 {
     /// <summary>
-    /// Gives this command, group, or argument a description, which is used when listing help.
+    /// Argument converter abstract.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Parameter,
-        AllowMultiple = false)]
-    public sealed class DescriptionAttribute : Attribute
+    public interface ISlashArgumentConverter
+    { }
+
+    /// <summary>
+    /// Represents a slash command converter for specific argument type.
+    /// </summary>
+    /// <typeparam name="T">Type for which the converter is to be registered.</typeparam>
+    public interface ISlashArgumentConverter<T> : ISlashArgumentConverter
     {
         /// <summary>
-        /// Gets the description for this command, group, or argument.
+        /// Slash command argument type that should be registered for this argument type.
         /// </summary>
-        public string Description { get; }
+        public ApplicationCommandOptionType OptionType { get; }
 
         /// <summary>
-        /// Gives this command, group, or argument a description, which is used when listing help.
+        /// Converts the raw value into the specified type.
         /// </summary>
-        /// <param name="description"></param>
-        public DescriptionAttribute(string description)
-        {
-            this.Description = description;
-        }
+        /// <param name="value">Value to convert.</param>
+        /// <param name="context">Context in which the value will be converted.</param>
+        public Task<T> Convert(DiscordInteractionDataOption value, InteractionContext context);
     }
 }

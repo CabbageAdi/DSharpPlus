@@ -30,5 +30,6 @@ namespace DSharpPlus.CommandsNext.Attributes
     /// </summary>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
     public class DontInjectAttribute : Attribute
-    { }
+    {
+    }
 }

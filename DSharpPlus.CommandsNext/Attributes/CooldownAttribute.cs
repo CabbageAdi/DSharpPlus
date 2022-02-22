@@ -226,7 +226,8 @@ namespace DSharpPlus.CommandsNext.Attributes
         /// <param name="userId">ID of the user with which this cooldown is associated.</param>
         /// <param name="channelId">ID of the channel with which this cooldown is associated.</param>
         /// <param name="guildId">ID of the guild with which this cooldown is associated.</param>
-        internal CommandCooldownBucket(int maxUses, TimeSpan resetAfter, ulong userId = 0, ulong channelId = 0, ulong guildId = 0)
+        internal CommandCooldownBucket(int maxUses, TimeSpan resetAfter, ulong userId = 0, ulong channelId = 0,
+            ulong guildId = 0)
         {
             this._remaining_uses = maxUses;
             this.MaxUses = maxUses;
@@ -347,6 +348,7 @@ namespace DSharpPlus.CommandsNext.Attributes
         /// <param name="guildId">ID of the guild with which this cooldown is associated.</param>
         /// <returns>Generated bucket ID.</returns>
         public static string MakeId(ulong userId = 0, ulong channelId = 0, ulong guildId = 0)
-            => $"{userId.ToString(CultureInfo.InvariantCulture)}:{channelId.ToString(CultureInfo.InvariantCulture)}:{guildId.ToString(CultureInfo.InvariantCulture)}";
+            =>
+                $"{userId.ToString(CultureInfo.InvariantCulture)}:{channelId.ToString(CultureInfo.InvariantCulture)}:{guildId.ToString(CultureInfo.InvariantCulture)}";
     }
 }

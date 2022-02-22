@@ -52,7 +52,8 @@ namespace DSharpPlus.CommandsNext.Attributes
         public CommandAttribute(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentNullException(nameof(name), "Command names cannot be null, empty, or all-whitespace.");
+                throw new ArgumentNullException(nameof(name),
+                    "Command names cannot be null, empty, or all-whitespace.");
 
             if (name.Any(xc => char.IsWhiteSpace(xc)))
                 throw new ArgumentException("Command names cannot contain whitespace characters.", nameof(name));
@@ -71,6 +72,7 @@ namespace DSharpPlus.CommandsNext.Attributes
         /// Marks this method as a group command.
         /// </summary>
         public GroupCommandAttribute()
-        { }
+        {
+        }
     }
 }

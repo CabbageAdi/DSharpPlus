@@ -44,7 +44,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="../logo/dsharpplus.png" Pack="true" PackagePath="/" />
+    <None Include="../logo/dsharpplus.png" Pack="true" PackagePath="/"/>
   </ItemGroup>
 
 </Project>

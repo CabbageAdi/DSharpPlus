@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <Import Project="../DSharpPlus.targets" />
+  <Import Project="../DSharpPlus.targets"/>
 
   <PropertyGroup>
     <AssemblyName>DSharpPlus.Rest</AssemblyName>
@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DSharpPlus\DSharpPlus.csproj" />
+    <ProjectReference Include="..\DSharpPlus\DSharpPlus.csproj"/>
   </ItemGroup>
 
 </Project>
